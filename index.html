@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>물의 수소 결합 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c2130; --panel:#11293a; --line:#24475b; --text:#eaf2f5; --muted:#a3bcc7;
+  --oxy:#e8553f; --hyd:#f4f6f7; --hb:#56d4e7; --broken:#ff7f9a; --give:#f3a83e; --take:#56d4e7;
+  --btn:#1a3a4d; --btnOn:#2b6178; --deep:#0c2130;
+  color-scheme:dark; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0c2130; --panel:#11293a; --text:#eaf2f5; --muted:#a3bcc7; } }
+:root[data-theme="dark"]{ --bg:#0c2130; --panel:#11293a; --text:#eaf2f5; --muted:#a3bcc7; }
+html{ height:100%; scroll-padding-top:env(safe-area-inset-top,0px); }
+body{ height:100%; margin:0; background:var(--bg); color:var(--text);
+  font-family:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif; }
+*,*::before,*::after{ box-sizing:border-box; }
+.app{ display:grid; grid-template-columns:minmax(0,1fr) 440px; height:100%; }
+.app.wide{ grid-template-columns:minmax(0,1fr) 620px; }
+#stage{ position:relative; overflow:hidden; min-height:0; }
+#cv{ display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+#cv:active{ cursor:grabbing; }
+.title{ position:absolute; left:24px; top:18px; pointer-events:none; }
+.title h1{ margin:0; font-size:clamp(26px,3vw,40px); font-weight:700; letter-spacing:-0.01em; white-space:nowrap; }
+.title p{ margin:4px 0 0; color:var(--muted); font-size:clamp(15px,1.4vw,19px); white-space:nowrap; }
+.phase{ position:absolute; right:22px; top:18px; font-size:clamp(24px,2.6vw,36px); font-weight:700; pointer-events:none; white-space:nowrap; text-align:right; }
+.phase small{ display:block; font-size:clamp(15px,1.3vw,18px); color:var(--muted); font-weight:400; }
+.hint{ position:absolute; left:24px; bottom:16px; color:var(--muted); font-size:15px; pointer-events:none; white-space:nowrap; }
+.load{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:20px; text-align:center; padding:20px; }
+
+aside{ background:var(--panel); border-left:1px solid var(--line); overflow-y:auto; padding:20px 22px 26px; min-height:0; }
+.tabs{ display:grid; grid-template-columns:repeat(4,1fr); gap:5px; background:var(--deep); padding:5px; border-radius:12px; }
+.tabs button{ font:inherit; font-size:16px; font-weight:600; color:var(--muted); background:transparent; border:0; border-radius:9px; padding:11px 2px; cursor:pointer; white-space:nowrap; }
+.tabs button[aria-selected="true"]{ background:var(--btnOn); color:var(--text); }
+button:focus-visible, input:focus-visible, a:focus-visible{ outline:3px solid var(--hb); outline-offset:2px; }
+h2{ font-size:27px; margin:22px 0 10px; line-height:1.3; }
+h3{ font-size:20px; margin:22px 0 10px; }
+.desc{ font-size:19px; line-height:1.65; margin:0 0 16px; }
+.legend{ list-style:none; padding:0; margin:0 0 16px; display:grid; gap:9px; font-size:18px; }
+.legend li{ display:flex; align-items:center; gap:12px; }
+.sw{ width:28px; height:14px; border-radius:4px; flex:none; }
+.sw.dot{ width:18px; height:18px; border-radius:50%; }
+.sw.dash{ height:0; border-top:4px dashed var(--hb); background:none; border-radius:0; }
+.sw.dashb{ height:0; border-top:4px dashed var(--broken); background:none; border-radius:0; }
+.facts{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 16px; }
+.fact{ border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+.fact b{ display:block; font-size:28px; }
+.fact span{ color:var(--muted); font-size:15px; }
+.temp{ margin:2px 0 4px; display:flex; align-items:baseline; gap:12px; }
+.temp b{ font-size:44px; font-variant-numeric:tabular-nums; }
+.temp span{ font-size:22px; font-weight:600; }
+input[type=range]{ width:100%; height:36px; accent-color:var(--hb); }
+.ticks{ position:relative; height:20px; color:var(--muted); font-size:14px; margin-top:-4px; }
+.ticks span{ position:absolute; transform:translateX(-50%); white-space:nowrap; }
+.stat{ margin:14px 0; border:1px solid var(--line); border-radius:14px; padding:12px 14px; }
+.stat-top{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.stat .big{ font-size:36px; font-weight:700; font-variant-numeric:tabular-nums; }
+.stat .sub{ color:var(--muted); font-size:15px; }
+#chart{ width:100%; height:180px; display:block; margin-top:8px; }
+.row{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 12px; }
+.row button{ font:inherit; font-size:16px; color:var(--text); background:var(--btn); border:1px solid var(--line); border-radius:10px; padding:10px 14px; cursor:pointer; white-space:nowrap; }
+.row button.primary{ background:#2f7d93; border-color:#3c97ae; font-weight:700; font-size:18px; padding:11px 18px; }
+.row button[aria-pressed="true"]{ background:var(--btnOn); }
+.key{ font-size:17px; line-height:1.6; background:var(--deep); border-radius:12px; padding:12px 14px; margin:12px 0; }
+.note{ color:var(--muted); font-size:14px; line-height:1.6; border-top:1px solid var(--line); padding-top:10px; margin-top:8px; }
+.ref{ border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:0 0 10px; }
+.ref .t{ font-size:16px; font-weight:600; line-height:1.4; }
+.ref .j{ color:var(--muted); font-size:14px; margin:2px 0 6px; }
+.ref .u{ font-size:16px; line-height:1.55; margin:0; }
+.ref .find{ font-size:13px; color:var(--muted); margin-top:6px; word-break:break-all; }
+.ref a{ color:var(--hb); }
+.lim{ display:grid; grid-template-columns:minmax(0,1fr) 170px; border-top:1px solid var(--line); }
+.lim > div{ padding:10px 4px; font-size:16px; line-height:1.55; border-bottom:1px solid var(--line); }
+.lim .src{ color:var(--muted); font-size:13px; padding-left:12px; border-left:1px dashed var(--line); }
+.lim .head{ font-size:14px; color:var(--muted); font-weight:600; }
+.seg-wrap{ display:flex; align-items:center; gap:12px; margin:10px 0 14px; flex-wrap:wrap; }
+.seg-label{ font-size:17px; font-weight:600; white-space:nowrap; }
+.seg{ display:inline-grid; grid-template-columns:1fr 1fr; background:var(--deep); padding:4px; border-radius:10px; gap:4px; }
+.seg button{ font:inherit; font-size:16px; color:var(--muted); background:transparent; border:0; border-radius:8px; padding:8px 16px; cursor:pointer; white-space:nowrap; }
+.seg button[aria-pressed="true"]{ background:var(--btnOn); color:var(--text); }
+.foot{ color:var(--muted); font-size:13px; margin-top:18px; }
+[hidden]{ display:none !important; }
+
+@media (max-width:900px){
+  .app, .app.wide{ grid-template-columns:1fr; grid-template-rows:50% 50%; }
+  aside{ border-left:0; border-top:1px solid var(--line); padding:12px 14px 20px; }
+  .tabs button{ font-size:14px; }
+  h2{ font-size:22px; margin-top:14px; }
+  .desc{ font-size:17px; }
+  .title{ left:14px; top:10px; } .phase{ right:14px; top:10px; }
+  .title p{ display:none; }
+  .hint{ left:14px; bottom:8px; font-size:13px; }
+  .lim{ grid-template-columns:minmax(0,1fr) 120px; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div id="stage">
+    <canvas id="cv" aria-label="물 분자와 수소 결합 3D 모형"></canvas>
+    <div class="title">
+      <h1>물의 수소 결합</h1>
+      <p>돌려 보며 분자들이 맞춰 잡은 배열을 살펴보세요</p>
+    </div>
+    <div class="phase" id="phase" hidden><span id="phaseName">얼음</span><small id="phaseT">−20 ℃</small></div>
+    <div class="hint">드래그로 돌리고, 휠이나 두 손가락으로 확대</div>
+    <div class="load" id="load">3D 모형을 불러오는 중</div>
+  </div>
+
+  <aside>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-mode="single">분자 하나</button>
+      <button role="tab" aria-selected="false" data-mode="tetra">이웃 다섯</button>
+      <button role="tab" aria-selected="false" data-mode="net">가열하기</button>
+      <button role="tab" aria-selected="false" data-mode="refs">근거와 한계</button>
+    </div>
+
+    <section data-panel="single">
+      <h2>손이 네 개인 물 분자</h2>
+      <p class="desc">물 분자는 약 104.5°로 굽은 모양입니다. 수소 2개는 이웃에게 내미는 손이고, 산소의 비공유 전자쌍 2개는 이웃의 수소를 받는 손입니다. 네 손은 사면체의 꼭짓점 방향을 향합니다.</p>
+      <ul class="legend">
+        <li><span class="sw dot" style="background:var(--oxy)"></span>산소</li>
+        <li><span class="sw dot" style="background:var(--hyd)"></span>수소</li>
+        <li><span class="sw" style="background:var(--give)"></span>주는 손 (수소 쪽)</li>
+        <li><span class="sw" style="background:var(--take)"></span>받는 손 (비공유 전자쌍 쪽)</li>
+      </ul>
+      <div class="facts">
+        <div class="fact"><b>2 + 2</b><span>주는 손과 받는 손</span></div>
+        <div class="fact"><b>104.5°</b><span>H–O–H 결합각</span></div>
+      </div>
+    </section>
+
+    <section data-panel="tetra" hidden>
+      <h2>이웃 넷이 만드는 사면체</h2>
+      <p class="desc">가운데 분자는 수소 2개로 이웃 둘을 붙잡고, 비공유 전자쌍 2개로 다른 이웃 둘의 수소를 받습니다. 그래서 이웃 4개가 정사면체의 꼭짓점에 놓입니다.</p>
+      <ul class="legend">
+        <li><span class="sw dash"></span>수소 결합</li>
+        <li><span class="sw" style="background:rgba(255,255,255,.45)"></span>이웃 산소를 이은 사면체</li>
+      </ul>
+      <div class="facts">
+        <div class="fact"><b>약 2.8 Å</b><span>산소와 산소 사이</span></div>
+        <div class="fact"><b>약 109.5°</b><span>이웃 사이 각도</span></div>
+      </div>
+    </section>
+
+    <section data-panel="net" hidden>
+      <h2>가열하며 풀리는 수소 결합</h2>
+      <p class="desc">가열 시작을 누르면 −20 ℃ 얼음부터 120 ℃ 수증기까지 천천히 데웁니다. 끊어지는 순간의 결합은 분홍색으로 깜박이고, 끊어진 뒤에는 흐린 분홍 점선으로 남습니다.</p>
+      <div class="row">
+        <button class="primary" id="btnHeat">가열 시작</button>
+        <button id="btnRestart">−20 ℃로 되돌리기</button>
+      </div>
+      <div class="temp"><b id="tval">−20 ℃</b><span id="tstate">얼음</span></div>
+      <input id="tslider" type="range" min="-20" max="120" step="1" value="-20" aria-label="온도 직접 조절">
+      <div class="ticks"><span style="left:0;transform:none">−20</span><span style="left:14.3%">0 ℃</span><span style="left:85.7%">100 ℃</span><span style="right:0;left:auto;transform:none">120</span></div>
+      <div class="stat">
+        <div class="stat-top"><span class="sub">이 모형에서 연결된 수소 결합</span><span class="big" id="pct">100%</span></div>
+        <div class="sub" id="cnt">0 / 0개</div>
+        <canvas id="chart" aria-label="온도에 따른 연결된 수소 결합 비율 그래프"></canvas>
+      </div>
+      <div class="key">녹을 때보다 끓을 때 훨씬 많은 결합이 끊어집니다. 그래서 물의 기화열(약 41 kJ/mol)이 융해열(약 6 kJ/mol)보다 훨씬 큽니다.</div>
+      <div class="seg-wrap">
+        <span class="seg-label">끊어진 결합 선</span>
+        <div class="seg" role="group" aria-label="끊어진 결합 선 표시">
+          <button id="brShow" aria-pressed="true">보이기</button>
+          <button id="brHide" aria-pressed="false">숨기기</button>
+        </div>
+      </div>
+      <ul class="legend">
+        <li><span class="sw dash"></span>연결된 수소 결합</li>
+        <li><span class="sw dashb"></span>끊어진 수소 결합</li>
+      </ul>
+      <p class="note">교육용 근사 모형입니다. 결합 판정 기준과 이 모형의 한계는 ‘근거와 한계’ 탭에 정리했습니다.</p>
+    </section>
+
+    <section data-panel="refs" hidden>
+      <h2>근거 논문</h2>
+      <div class="ref">
+        <div class="t">The Strength of Hydrogen Bonds in Liquid Water and Around Nonpolar Solutes</div>
+        <div class="j">Silverstein, Haymet, Dill · J. Am. Chem. Soc. 122, 8037 (2000)</div>
+        <p class="u">수소 결합을 ‘유지’와 ‘끊어짐’ 두 상태로 나누어 볼 수 있다는 근거. 온도가 오르면 유지된 결합이 줄어든다(0 ℃ 약 72% → 100 ℃ 약 52%). 결합 하나를 끊는 데 약 1.9 kcal/mol이 들고, 이 값으로 물의 열용량이 설명된다.</p>
+        <div class="find">찾기: <a href="https://doi.org/10.1021/ja000459t" target="_blank" rel="noopener">doi.org/10.1021/ja000459t</a> 또는 Google Scholar에 제목 검색</div>
+      </div>
+      <div class="ref">
+        <div class="t">Consequences of chain networks on thermodynamic, dielectric and structural properties for liquid water</div>
+        <div class="j">Head-Gordon, Rick · Phys. Chem. Chem. Phys. 9, 83 (2007)</div>
+        <p class="u">물 분자를 사면체 그물로 배열한 근거. 결합이 2개뿐인 사슬 모형은 물의 밀도 최대와 열용량 변화를 재현하지 못했다. 거리·각도 기준으로 세면 얼음은 분자당 약 3.9개, 상온 물은 약 3.1~3.3개.</p>
+        <div class="find">찾기: <a href="https://doi.org/10.1039/B614742A" target="_blank" rel="noopener">doi.org/10.1039/B614742A</a> 또는 Google Scholar에 제목 검색</div>
+      </div>
+      <div class="ref">
+        <div class="t">Hydrogen-bond kinetics in liquid water</div>
+        <div class="j">Luzar, Chandler · Nature 379, 55 (1996)</div>
+        <p class="u">이 앱의 수소 결합 판정 기준: 산소와 산소 사이 3.5 Å 이내, 결합 각도 30° 이내. 시뮬레이션 연구에서 널리 쓰이는 기준이다.</p>
+        <div class="find">찾기: <a href="https://doi.org/10.1038/379055a0" target="_blank" rel="noopener">doi.org/10.1038/379055a0</a><br>링크가 열리지 않으면 Google Scholar에서 제목 "Hydrogen-bond kinetics in liquid water"로 검색하면 바로 나옵니다.</div>
+      </div>
+      <div class="ref">
+        <div class="t">The Structure and Properties of Water</div>
+        <div class="j">Eisenberg, Kauzmann · Oxford (1969, 2005 재출간)</div>
+        <p class="u">물 분자의 결합각 104.5°, 얼음의 사면체 배열, 산소와 산소 사이 거리 약 2.76 Å.</p>
+        <div class="find">찾기: ISBN 978-0-19-857026-4, 대학 도서관 또는 RISS에서 소장처 검색</div>
+      </div>
+
+      <h3>이 시뮬레이션의 한계</h3>
+      <div class="lim">
+        <div class="head">한계</div><div class="head src">근거</div>
+        <div>분자가 제자리 근처에서만 흔들립니다. 실제 액체에서는 분자가 이웃을 바꾸며 돌아다니고, 결합도 주로 새 상대로 갈아타며 끊어집니다.</div>
+        <div class="src">Luzar, Faraday Discuss. 103, 29 (1996)</div>
+        <div>화면은 실제보다 엄청나게 느립니다. 실제 수소 결합은 약 1조분의 1초(피코초) 단위로 끊어지고 다시 생깁니다.</div>
+        <div class="src">Luzar, Chandler, Nature 379, 55 (1996)</div>
+        <div>결합 비율 숫자는 판정 기준에 따라 달라집니다. 이 앱의 기하 기준 값(25 ℃ 약 83%)은 두 상태 모형의 추정(약 70%)보다 큽니다. 0 ℃에서 끊어진 비율 추정은 연구마다 7%에서 60%까지 다릅니다.</div>
+        <div class="src">Silverstein 외, JACS 122, 8037 (2000) 서론</div>
+        <div>얼음 구조를 단순화했습니다. 같은 사면체 배열의 입방 격자를 쓰고 수소 방향을 규칙적으로 정렬했지만, 실제 얼음은 수소 배치가 무질서합니다.</div>
+        <div class="src">Pauling, JACS 57, 2680 (1935)</div>
+        <div>그물 화면에서는 H–O–H 각도를 109.5°로 단순화했습니다. 실제는 104.5°입니다.</div>
+        <div class="src">Eisenberg, Kauzmann (1969)</div>
+        <div>녹는 구간과 끓는 구간의 시간, 수증기가 퍼지는 정도는 연출입니다. 실제 100 ℃, 1기압 수증기는 분자 사이가 약 37 Å로 액체(약 3 Å)의 10배가 넘습니다.</div>
+        <div class="src">이상 기체 상태 방정식으로 계산</div>
+        <div>분자 사이의 실제 힘을 계산하지 않고, 온도에 맞춘 무작위 흔들림으로 움직임을 흉내 냈습니다.</div>
+        <div class="src">모형 설계상의 단순화</div>
+      </div>
+    </section>
+
+    <div class="row" style="margin-top:14px">
+      <button id="btnRotate" aria-pressed="true">자동 회전</button>
+      <button id="btnReset">처음 시점으로</button>
+    </div>
+    <div class="foot">Copyright 2026 오효선</div>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  if (typeof THREE === 'undefined') {
+    document.getElementById('load').textContent = '3D 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침하세요.';
+    return;
+  }
+  document.getElementById('load').remove();
+
+  const app = document.getElementById('app');
+  const stage = document.getElementById('stage');
+  const canvas = document.getElementById('cv');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0c2130);
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 800);
+  scene.add(new THREE.HemisphereLight(0xdff3ff, 0x1a2f3a, 0.85));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(6, 10, 8); scene.add(sun);
+  const rim = new THREE.DirectionalLight(0x88ccff, 0.3); rim.position.set(-8, -4, -6); scene.add(rim);
+
+  const COL = { oxy:0xe8553f, hyd:0xf4f6f7, hb:0x56d4e7, broken:0xff7f9a, give:0xf3a83e, take:0x56d4e7 };
+  const R_O = 0.42, R_H = 0.25, OH = 0.96, OO = 2.76, CUT_R = 3.5, CUT_A = 30;
+  const gSphere = new THREE.SphereGeometry(1, 28, 20);
+  const gCyl = new THREE.CylinderGeometry(1, 1, 1, 14);
+  const gCone = new THREE.ConeGeometry(1, 1, 18);
+  const mO = new THREE.MeshStandardMaterial({ color:COL.oxy, roughness:0.45, metalness:0.05 });
+  const mH = new THREE.MeshStandardMaterial({ color:COL.hyd, roughness:0.4 });
+  const mStick = new THREE.MeshStandardMaterial({ color:0xd9e2e6, roughness:0.5 });
+  const mHB = new THREE.MeshBasicMaterial({ color:COL.hb });
+  const mBroken = new THREE.MeshBasicMaterial({ color:COL.broken, transparent:true, opacity:0.45 });
+  const mFlash = new THREE.MeshBasicMaterial({ color:COL.broken });
+
+  const UP = new THREE.Vector3(0,1,0);
+  const _v = new THREE.Vector3();
+  function sphere(mat, r){ const m = new THREE.Mesh(gSphere, mat); m.scale.setScalar(r); return m; }
+  function stick(mat, r){ const m = new THREE.Mesh(gCyl, mat); m.userData.r = r; return m; }
+  function placeStick(mesh, a, b){
+    _v.subVectors(b, a); const L = _v.length(); if (L < 1e-6) return;
+    mesh.position.addVectors(a, b).multiplyScalar(0.5);
+    mesh.quaternion.setFromUnitVectors(UP, _v.multiplyScalar(1/L));
+    mesh.scale.set(mesh.userData.r, L, mesh.userData.r);
+  }
+  function arrow(origin, dir, len, color){
+    const g = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color, roughness:0.4, emissive:color, emissiveIntensity:0.25 });
+    const headL = 0.38, shaft = stick(mat, 0.07), head = new THREE.Mesh(gCone, mat);
+    const end = origin.clone().addScaledVector(dir, len - headL);
+    placeStick(shaft, origin, end);
+    head.scale.set(0.18, headL, 0.18);
+    head.position.copy(end).addScaledVector(dir, headL/2);
+    head.quaternion.setFromUnitVectors(UP, dir);
+    g.add(shaft, head); return g;
+  }
+  // 수소 결합 점선: 수소에서 받는 쪽 산소까지 (길이에 따라 점선 개수 조절)
+  const _u = new THREE.Vector3(), _mid = new THREE.Vector3(), _dq = new THREE.Quaternion(), _ds = new THREE.Vector3(), _dm = new THREE.Matrix4();
+  function dashes(h, o, cb, rad){
+    _u.subVectors(o, h); const L = _u.length(); if (L < 1e-6) return; _u.multiplyScalar(1/L);
+    const a = R_H + 0.06, b = L - R_O - 0.06, seg = b - a; if (seg <= 0.15) return;
+    const n = Math.max(3, Math.min(10, Math.round(seg / 0.45))), dl = seg / (n * 1.7);
+    _dq.setFromUnitVectors(UP, _u); _ds.set(rad, dl, rad);
+    for (let i = 0; i < n; i++){
+      _mid.copy(h).addScaledVector(_u, a + i * seg / n + dl/2);
+      _dm.compose(_mid, _dq, _ds); cb(_dm);
+    }
+  }
+  function staticDashes(pairs){
+    const list = []; pairs.forEach(([h,o]) => dashes(h, o, m => list.push(m.clone()), 0.06));
+    const im = new THREE.InstancedMesh(gCyl, mHB, Math.max(list.length,1));
+    list.forEach((m,i) => im.setMatrixAt(i, m)); im.count = list.length; im.instanceMatrix.needsUpdate = true;
+    return im;
+  }
+  function molecule(center, hDirs, group){
+    const o = sphere(mO, R_O); o.position.copy(center); group.add(o);
+    return hDirs.map(d => {
+      const p = center.clone().addScaledVector(d, OH);
+      const h = sphere(mH, R_H); h.position.copy(p); group.add(h);
+      const s = stick(mStick, 0.1); placeStick(s, center, p); group.add(s);
+      return p;
+    });
+  }
+  const k3 = 1/Math.sqrt(3);
+  const DIRS_A = [[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]].map(a => new THREE.Vector3(a[0]*k3,a[1]*k3,a[2]*k3));
+  const DIRS_B = DIRS_A.map(d => d.clone().negate());
+  const donorDirs = dirs => dirs.filter(d => d.z > 0);
+
+  // ---------- 분자 하나 ----------
+  const gSingle = new THREE.Group(); scene.add(gSingle);
+  (function(){
+    const half = 104.5/2 * Math.PI/180;
+    const hd = [new THREE.Vector3(Math.sin(half), Math.cos(half), 0), new THREE.Vector3(-Math.sin(half), Math.cos(half), 0)];
+    const lh = 109.5/2 * Math.PI/180;
+    const ld = [new THREE.Vector3(0, -Math.cos(lh), Math.sin(lh)), new THREE.Vector3(0, -Math.cos(lh), -Math.sin(lh))];
+    const c = new THREE.Vector3(0, 0.2, 0);
+    molecule(c, hd, gSingle);
+    const lobeMat = new THREE.MeshStandardMaterial({ color:COL.take, transparent:true, opacity:0.32, roughness:0.3, depthWrite:false });
+    ld.forEach(d => {
+      const lobe = new THREE.Mesh(gSphere, lobeMat);
+      lobe.scale.set(0.32, 0.62, 0.32);
+      lobe.position.copy(c).addScaledVector(d, 0.72);
+      lobe.quaternion.setFromUnitVectors(UP, d);
+      gSingle.add(lobe);
+      gSingle.add(arrow(c.clone().addScaledVector(d, 1.35), d, 1.5, COL.take));
+    });
+    hd.forEach(d => gSingle.add(arrow(c.clone().addScaledVector(d, 1.32), d, 1.5, COL.give)));
+  })();
+
+  // ---------- 이웃 다섯 ----------
+  const gTetra = new THREE.Group(); scene.add(gTetra);
+  (function(){
+    const c = new THREE.Vector3(0,0,0);
+    const halo = new THREE.Mesh(gSphere, new THREE.MeshBasicMaterial({ color:COL.hb, transparent:true, opacity:0.08, depthWrite:false }));
+    halo.scale.setScalar(1.55); gTetra.add(halo);
+    const centerH = molecule(c, donorDirs(DIRS_A), gTetra);
+    const pairs = [];
+    const nbPos = DIRS_A.map(d => c.clone().addScaledVector(d, OO));
+    donorDirs(DIRS_A).forEach((d, i) => { const j = DIRS_A.findIndex(x => x.equals(d)); pairs.push([centerH[i], nbPos[j]]); });
+    nbPos.forEach(p => {
+      const hs = molecule(p, donorDirs(DIRS_B), gTetra);
+      donorDirs(DIRS_B).forEach((d, i) => { if (p.clone().addScaledVector(d, OO).length() < 0.1) pairs.push([hs[i], c]); });
+    });
+    gTetra.add(staticDashes(pairs));
+    const edgeMat = new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0.4 });
+    for (let i = 0; i < 4; i++) for (let j = i+1; j < 4; j++){ const e = stick(edgeMat, 0.03); placeStick(e, nbPos[i], nbPos[j]); gTetra.add(e); }
+    const fg = new THREE.BufferGeometry(), arr = [];
+    [[0,1,2],[0,1,3],[0,2,3],[1,2,3]].forEach(t => t.forEach(k => arr.push(nbPos[k].x, nbPos[k].y, nbPos[k].z)));
+    fg.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+    gTetra.add(new THREE.Mesh(fg, new THREE.MeshBasicMaterial({ color:0xbfe9f2, transparent:true, opacity:0.06, side:THREE.DoubleSide, depthWrite:false })));
+  })();
+
+  // ---------- 가열하기 (그물) ----------
+  const gNet = new THREE.Group(); scene.add(gNet);
+  const mols = [], bonds = [];
+  (function(){
+    const a = OO * 4 / Math.sqrt(3);
+    const fcc = [[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0]];
+    const key = v => `${Math.round(v.x*10)},${Math.round(v.y*10)},${Math.round(v.z*10)}`;
+    const index = new Map();
+    for (let i=-3;i<3;i++) for (let j=-3;j<3;j++) for (let k=-3;k<3;k++) for (const f of fcc) for (const [b,type] of [[0,'A'],[0.25,'B']]){
+      const p = new THREE.Vector3((i+f[0]+b)*a, (j+f[1]+b)*a, (k+f[2]+b)*a);
+      if (p.length() > 8.6) continue;
+      const m = { base:p, hLocal: donorDirs(type==='A' ? DIRS_A : DIRS_B).map(d => d.clone().multiplyScalar(OH)),
+        p:new THREE.Vector3(), r:new THREE.Vector3(), O:new THREE.Vector3(), H:[new THREE.Vector3(), new THREE.Vector3()],
+        drift:new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).multiplyScalar(6) };
+      m.oMesh = sphere(mO, R_O); gNet.add(m.oMesh);
+      m.hMesh = [sphere(mH, R_H), sphere(mH, R_H)]; m.hMesh.forEach(h => gNet.add(h));
+      m.sMesh = [stick(mStick, 0.1), stick(mStick, 0.1)]; m.sMesh.forEach(s => gNet.add(s));
+      index.set(key(p), mols.length); mols.push(m);
+    }
+    mols.forEach((m, i) => m.hLocal.forEach((hl, h) => {
+      const j = index.get(key(m.base.clone().addScaledVector(hl.clone().normalize(), OO)));
+      if (j !== undefined) bonds.push({ d:i, h, acc:j, on:true, flash:0 });
+    }));
+  })();
+  const MAXD = bonds.length * 12;
+  const imOn = new THREE.InstancedMesh(gCyl, mHB, MAXD), imOff = new THREE.InstancedMesh(gCyl, mBroken, MAXD), imFl = new THREE.InstancedMesh(gCyl, mFlash, MAXD);
+  [imOn, imOff, imFl].forEach(im => { im.frustumCulled = false; im.count = 0; gNet.add(im); });
+
+  // 상태: 온도 T, 녹은 정도 melt(0~1), 끓은 정도 vap(0~1)
+  let T = -20, melt = 0, vap = 0, heating = false, showBroken = true, shownPct = 100;
+  const HEAT_RATE = 7, MELT_TIME = 4, BOIL_TIME = 6;
+  const DEG = Math.PI/180;
+  const lerp = (a,b,t) => a + (b-a)*t;
+  function gauss(){ let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+  function posStd(){
+    const ice = 0.05 + 0.0005*(Math.min(T,0)+20), liq = 0.14 + 0.0012*Math.max(Math.min(T,100),0);
+    return lerp(lerp(ice, liq, melt), 0.9, vap);
+  }
+  function rotStd(){
+    const ice = 4 + 0.05*(Math.min(T,0)+20), liq = 13 + 0.09*Math.max(Math.min(T,100),0);
+    return lerp(lerp(ice, liq, melt), 110, vap) * DEG;
+  }
+  const cosMax = Math.cos(CUT_A*DEG);
+  const _hv = new THREE.Vector3(), _ov = new THREE.Vector3(), _axis = new THREE.Vector3(), _rq = new THREE.Quaternion(), _bp = new THREE.Vector3();
+  function seed(){ const ps=posStd(), rs=rotStd(); mols.forEach(m => { m.p.set(gauss()*ps,gauss()*ps,gauss()*ps); m.r.set(gauss()*rs,gauss()*rs,gauss()*rs); }); bonds.forEach(b => { b.on = true; b.flash = 0; }); }
+
+  function stepNet(dt){
+    const k = 2.5, sq = Math.sqrt(dt);
+    const sp = posStd() * Math.sqrt(2*k), sr = rotStd() * Math.sqrt(2*k);
+    const expand = 1 + 2.6*vap;
+    for (const m of mols){
+      m.p.x += -k*m.p.x*dt + sp*sq*gauss(); m.p.y += -k*m.p.y*dt + sp*sq*gauss(); m.p.z += -k*m.p.z*dt + sp*sq*gauss();
+      m.r.x += -k*m.r.x*dt + sr*sq*gauss(); m.r.y += -k*m.r.y*dt + sr*sq*gauss(); m.r.z += -k*m.r.z*dt + sr*sq*gauss();
+      _bp.copy(m.base).multiplyScalar(expand).addScaledVector(m.drift, vap);
+      m.O.addVectors(_bp, m.p);
+      const ang = m.r.length();
+      if (ang > 1e-6){ _axis.copy(m.r).multiplyScalar(1/ang); _rq.setFromAxisAngle(_axis, ang); } else _rq.identity();
+      for (let h=0; h<2; h++){
+        m.H[h].copy(m.hLocal[h]).applyQuaternion(_rq).add(m.O);
+        m.hMesh[h].position.copy(m.H[h]);
+        placeStick(m.sMesh[h], m.O, m.H[h]);
+      }
+      m.oMesh.position.copy(m.O);
+    }
+    let nOn = 0, iOn = 0, iOff = 0, iFl = 0;
+    for (const b of bonds){
+      const D = mols[b.d], A = mols[b.acc];
+      _ov.subVectors(A.O, D.O); const dOO = _ov.length();
+      _hv.subVectors(D.H[b.h], D.O).normalize();
+      const on = dOO < CUT_R && _hv.dot(_ov.multiplyScalar(1/dOO)) > cosMax;
+      if (b.on && !on) b.flash = 0.6;
+      b.on = on; if (b.flash > 0) b.flash -= dt;
+      if (on){ nOn++; dashes(D.H[b.h], A.O, m => imOn.setMatrixAt(iOn++, m), 0.06); }
+      else if (showBroken && b.flash > 0){ dashes(D.H[b.h], A.O, m => imFl.setMatrixAt(iFl++, m), 0.085); }
+      else if (showBroken && dOO < 9){ dashes(D.H[b.h], A.O, m => imOff.setMatrixAt(iOff++, m), 0.05); }
+    }
+    imOn.count = iOn; imOff.count = iOff; imFl.count = iFl;
+    imOn.instanceMatrix.needsUpdate = true; imOff.instanceMatrix.needsUpdate = true; imFl.instanceMatrix.needsUpdate = true;
+    const pct = 100 * nOn / bonds.length;
+    shownPct += (pct - shownPct) * Math.min(1, dt * 2.5);
+    pctEl.textContent = Math.round(shownPct) + '%';
+    cntEl.textContent = `${nOn} / ${bonds.length}개`;
+  }
+
+  function phaseName(){
+    if (vap >= 1) return '수증기';
+    if (vap > 0) return '끓는 중';
+    if (melt <= 0) return '얼음';
+    if (melt < 1) return '녹는 중';
+    return '액체 물';
+  }
+  function stepHeat(dt){
+    if (!heating) return;
+    if (T < 0){ T = Math.min(0, T + HEAT_RATE*dt); }
+    else if (melt < 1){ melt = Math.min(1, melt + dt/MELT_TIME); }
+    else if (T < 100){ T = Math.min(100, T + HEAT_RATE*dt); }
+    else if (vap < 1){ vap = Math.min(1, vap + dt/BOIL_TIME); }
+    else if (T < 120){ T = Math.min(120, T + HEAT_RATE*dt); }
+    else { heating = false; heatBtn.textContent = '가열 시작'; }
+  }
+
+  // ---------- 그래프 ----------
+  const chart = document.getElementById('chart'), cx = chart.getContext('2d');
+  let samples = [], sampleClock = 0;
+  function drawChart(){
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), w = chart.clientWidth, h = chart.clientHeight;
+    if (!w) return;
+    if (chart.width !== Math.round(w*dpr)){ chart.width = Math.round(w*dpr); chart.height = Math.round(h*dpr); }
+    cx.setTransform(dpr,0,0,dpr,0,0); cx.clearRect(0,0,w,h);
+    const L = 36, R = 8, Tp = 8, B = 24, pw = w-L-R, ph = h-Tp-B;
+    const X = t => L + (t+20)/140*pw, Y = p => Tp + (1-p/100)*ph;
+    cx.font = '12px "IBM Plex Sans KR", sans-serif'; cx.fillStyle = '#a3bcc7'; cx.strokeStyle = '#24475b'; cx.lineWidth = 1;
+    [0,50,100].forEach(p => { cx.beginPath(); cx.moveTo(L, Y(p)); cx.lineTo(L+pw, Y(p)); cx.stroke(); cx.textAlign='right'; cx.fillText(p+'%', L-5, Y(p)+4); });
+    cx.setLineDash([4,4]); cx.strokeStyle = '#4f7486';
+    [0,100].forEach(t => { cx.beginPath(); cx.moveTo(X(t), Tp); cx.lineTo(X(t), Tp+ph); cx.stroke(); });
+    cx.setLineDash([]); cx.textAlign = 'center';
+    [[-20,'−20'],[0,'0 ℃'],[50,'50'],[100,'100 ℃'],[120,'120']].forEach(([t,s]) => cx.fillText(s, X(t), h-6));
+    if (samples.length){
+      cx.strokeStyle = '#56d4e7'; cx.lineWidth = 2.5; cx.beginPath();
+      samples.forEach((s,i) => { const x = X(s.t), y = Y(s.p); i ? cx.lineTo(x,y) : cx.moveTo(x,y); }); cx.stroke();
+      const s = samples[samples.length-1]; cx.fillStyle = '#56d4e7'; cx.beginPath(); cx.arc(X(s.t), Y(s.p), 4, 0, Math.PI*2); cx.fill();
+    }
+  }
+  function sample(dt){
+    sampleClock += dt; if (sampleClock < 0.15) return; sampleClock = 0;
+    if (!heating) return;
+    samples.push({ t:T, p:shownPct }); if (samples.length > 600) samples.shift(); drawChart();
+  }
+
+  // ---------- 카메라 ----------
+  const VIEW = { single:{ yaw:0.5, pitch:0.25, dist:10 }, tetra:{ yaw:0.7, pitch:0.35, dist:15 }, net:{ yaw:0.6, pitch:0.3, dist:38 }, refs:{ yaw:0.6, pitch:0.3, dist:38 } };
+  let mode = 'single', yaw = VIEW.single.yaw, pitch = VIEW.single.pitch, dist = VIEW.single.dist;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let autoRotate = !reduce;
+  function updateCam(){
+    const d = dist * ((mode === 'net' || mode === 'refs') ? (1 + 1.9*vap) : 1);
+    camera.position.set(d*Math.cos(pitch)*Math.sin(yaw), d*Math.sin(pitch), d*Math.cos(pitch)*Math.cos(yaw));
+    camera.lookAt(0,0,0);
+  }
+  const pointers = new Map(); let pinch0 = 0, dist0 = dist;
+  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if (pointers.size === 2){ const [a,b] = [...pointers.values()]; pinch0 = Math.hypot(a.x-b.x, a.y-b.y); dist0 = dist; } });
+  canvas.addEventListener('pointermove', e => {
+    if (!pointers.has(e.pointerId)) return;
+    const prev = pointers.get(e.pointerId), cur = {x:e.clientX, y:e.clientY}; pointers.set(e.pointerId, cur);
+    if (pointers.size === 1){ yaw -= (cur.x - prev.x) * 0.008; pitch = Math.max(-1.45, Math.min(1.45, pitch + (cur.y - prev.y) * 0.008)); }
+    else if (pointers.size === 2){ const [a,b] = [...pointers.values()]; const d = Math.hypot(a.x-b.x, a.y-b.y); if (pinch0 > 0) dist = clampDist(dist0 * pinch0 / d); }
+  });
+  const endP = e => { pointers.delete(e.pointerId); if (pointers.size < 2) pinch0 = 0; };
+  canvas.addEventListener('pointerup', endP); canvas.addEventListener('pointercancel', endP);
+  canvas.addEventListener('wheel', e => { e.preventDefault(); dist = clampDist(dist * (1 + Math.sign(e.deltaY) * 0.08)); }, { passive:false });
+  function clampDist(d){ const v = VIEW[mode].dist; return Math.max(v*0.4, Math.min(v*2.2, d)); }
+
+  // ---------- 화면 연결 ----------
+  const pctEl = document.getElementById('pct'), cntEl = document.getElementById('cnt');
+  const tval = document.getElementById('tval'), tstate = document.getElementById('tstate'), slider = document.getElementById('tslider');
+  const phaseBox = document.getElementById('phase'), phaseNameEl = document.getElementById('phaseName'), phaseTEl = document.getElementById('phaseT');
+  const heatBtn = document.getElementById('btnHeat');
+  const fmtT = v => (v < 0 ? '−' + Math.abs(Math.round(v)) : Math.round(v)) + ' ℃';
+  function refreshTemp(){
+    const name = phaseName(), t = fmtT(T);
+    tval.textContent = t; tstate.textContent = name; phaseNameEl.textContent = name; phaseTEl.textContent = t;
+    const c = (name === '얼음') ? '#9fd8ff' : (name === '수증기' || name === '끓는 중') ? '#ffd27a' : '#56d4e7';
+    tstate.style.color = c; phaseNameEl.style.color = c;
+    if (document.activeElement !== slider) slider.value = Math.round(T);
+  }
+  function setMode(m){
+    mode = m;
+    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.mode === m ? 'true' : 'false'));
+    document.querySelectorAll('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== m);
+    gSingle.visible = m === 'single'; gTetra.visible = m === 'tetra'; gNet.visible = (m === 'net' || m === 'refs');
+    phaseBox.hidden = !(m === 'net' || m === 'refs');
+    app.classList.toggle('wide', m === 'refs');
+    yaw = VIEW[m].yaw; pitch = VIEW[m].pitch; dist = VIEW[m].dist;
+    if (m === 'net') requestAnimationFrame(drawChart);
+  }
+  document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  slider.addEventListener('input', () => {
+    heating = false; heatBtn.textContent = '가열 시작';
+    T = +slider.value; melt = T >= 0 ? 1 : 0; vap = T > 100 ? 1 : 0; refreshTemp();
+  });
+  function restart(){ heating = false; heatBtn.textContent = '가열 시작'; T = -20; melt = 0; vap = 0; seed(); shownPct = 100; samples = []; drawChart(); refreshTemp(); }
+  heatBtn.addEventListener('click', () => {
+    if (heating){ heating = false; heatBtn.textContent = '가열 계속'; return; }
+    if (T >= 120 && vap >= 1){ restart(); }
+    if (!samples.length) samples.push({ t:T, p:shownPct });
+    heating = true; heatBtn.textContent = '멈춤';
+  });
+  document.getElementById('btnRestart').addEventListener('click', restart);
+  const btnRot = document.getElementById('btnRotate');
+  btnRot.setAttribute('aria-pressed', autoRotate ? 'true' : 'false');
+  btnRot.addEventListener('click', () => { autoRotate = !autoRotate; btnRot.setAttribute('aria-pressed', autoRotate ? 'true' : 'false'); });
+  document.getElementById('btnReset').addEventListener('click', () => { yaw = VIEW[mode].yaw; pitch = VIEW[mode].pitch; dist = VIEW[mode].dist; });
+  const brShow = document.getElementById('brShow'), brHide = document.getElementById('brHide');
+  function setBroken(v){ showBroken = v; brShow.setAttribute('aria-pressed', v ? 'true' : 'false'); brHide.setAttribute('aria-pressed', v ? 'false' : 'true'); }
+  brShow.addEventListener('click', () => setBroken(true)); brHide.addEventListener('click', () => setBroken(false));
+
+  seed(); refreshTemp(); setMode('single');
+
+  function resize(){
+    const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); drawChart();
+  }
+  new ResizeObserver(resize).observe(stage); resize();
+
+  let last = performance.now();
+  function loop(now){
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (autoRotate && pointers.size === 0) yaw += dt * 0.18;
+    if (mode === 'net' || mode === 'refs'){
+      stepHeat(dt); stepNet(dt); sample(dt);
+      if (heating) refreshTemp();
+    }
+    updateCam();
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
